@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>BJ Counter</title>
+<style>
+body { font-family: Arial; text-align:center; }
+button { padding:20px; margin:5px; font-size:18px; }
+.grid { display:grid; grid-template-columns: repeat(3,1fr); }
+.good { color:green; font-size:22px; font-weight:bold; }
+.normal { font-size:18px; }
+</style>
+</head>
+<body>
+
+<h2>ブラックジャックカウンター</h2>
+
+<p>残り: <span id="total"></span></p>
+<p>TC: <span id="trueCount"></span></p>
+<p id="advantage" class="normal"></p>
+
+<div class="grid" id="cards"></div>
+
+<script>
+let decks = 8;
+
+let counts = {
+"A":4*decks,"2":4*decks,"3":4*decks,"4":4*decks,
+"5":4*decks,"6":4*decks,"7":4*decks,"8":4*decks,
+"9":4*decks,"10":16*decks
+};
+
+let running = 0;
+
+function hilo(card){
+if(["2","3","4","5","6"].includes(card)) return 1;
+if(["10","A"].includes(card)) return -1;
+return 0;
+}
+
+function update(){
+let total = Object.values(counts).reduce((a,b)=>a+b,0);
+let decksRemain = total/52;
+let trueCount = (running / decksRemain).toFixed(2);
+
+document.getElementById("total").innerText = total;
+document.getElementById("trueCount").innerText = trueCount;
+
+let adv = document.getElementById("advantage");
+
+if(trueCount >= 2){
+adv.innerHTML = "有利";
+adv.className = "good";
+} else {
+adv.innerHTML = "通常";
+adv.className = "normal";
+}
+
+let html = "";
+for(let key in counts){
+html += `<button onclick="draw('${key}')">${key}</button>`;
+}
+
+document.getElementById("cards").innerHTML = html;
+}
+
+function draw(card){
+if(counts[card] > 0){
+counts[card]--;
+running += hilo(card);
+update();
+}
+}
+
+update();
+</script>
+
+</body>
+</html>
