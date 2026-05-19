@@ -94,7 +94,9 @@ function playClickSound() {
 
 window.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', playClickSound);
+    btn.onclick = () => {
+      playClickSound();
+    };
   });
 });
 </script>
