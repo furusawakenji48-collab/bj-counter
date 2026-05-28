@@ -1,105 +1,277 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>BJ Counter</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Blackjack Counter</title>
+
 <style>
-body { font-family: Arial; text-align:center; }
-button { padding:20px; margin:5px; font-size:18px; }
-.grid { display:grid; grid-template-columns: repeat(3,1fr); }
-.good { color:green; font-size:22px; font-weight:bold; }
-.normal { font-size:18px; }
+    body{
+        background:#111;
+        color:white;
+        font-family:sans-serif;
+        text-align:center;
+        margin:0;
+        padding:20px;
+    }
+
+    h1{
+        margin-bottom:10px;
+    }
+
+    .info{
+        font-size:20px;
+        margin-bottom:20px;
+    }
+
+    .count{
+        font-size:42px;
+        font-weight:bold;
+        margin:20px 0;
+    }
+
+    .buttons{
+        display:grid;
+        grid-template-columns:repeat(5,1fr);
+        gap:10px;
+        max-width:700px;
+        margin:0 auto 20px;
+    }
+
+    button{
+        padding:18px;
+        font-size:22px;
+        border:none;
+        border-radius:12px;
+        background:#222;
+        color:white;
+        cursor:pointer;
+        transition:0.15s;
+    }
+
+    button:hover{
+        background:#444;
+    }
+
+    .positive{
+        background:#1f8f3c;
+    }
+
+    .negative{
+        background:#b52a2a;
+    }
+
+    .neutral{
+        background:#555;
+    }
+
+    .reset{
+        margin-top:20px;
+        background:#0066ff;
+        width:220px;
+    }
+
+    table{
+        margin:20px auto;
+        border-collapse:collapse;
+        width:90%;
+        max-width:700px;
+    }
+
+    th, td{
+        border:1px solid #444;
+        padding:10px;
+    }
+
+    th{
+        background:#222;
+    }
+
+    .remain{
+        font-size:18px;
+    }
 </style>
 </head>
+
 <body>
 
-<h2>ブラックジャックカウンター</h2>
+<h1>ブラックジャック カウンター</h1>
 
-<p>残り: <span id="total"></span></p>
-<p>TC: <span id="trueCount"></span></p>
-<p id="advantage" class="normal"></p>
+<div class="info">
+    デッキ数:
+    <select id="deckSelect">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="4">4</option>
+        <option value="6" selected>6</option>
+        <option value="8">8</option>
+    </select>
+</div>
 
-<div class="grid" id="cards"></div>
+<div class="count">
+    Running Count:
+    <span id="count">0</span>
+</div>
+
+<div class="buttons">
+
+    <button class="positive" onclick="cardPressed('2')">2</button>
+    <button class="positive" onclick="cardPressed('3')">3</button>
+    <button class="positive" onclick="cardPressed('4')">4</button>
+    <button class="positive" onclick="cardPressed('5')">5</button>
+    <button class="positive" onclick="cardPressed('6')">6</button>
+
+    <button class="neutral" onclick="cardPressed('7')">7</button>
+    <button class="neutral" onclick="cardPressed('8')">8</button>
+    <button class="neutral" onclick="cardPressed('9')">9</button>
+
+    <button class="negative" onclick="cardPressed('10')">10</button>
+    <button class="negative" onclick="cardPressed('J')">J</button>
+    <button class="negative" onclick="cardPressed('Q')">Q</button>
+    <button class="negative" onclick="cardPressed('K')">K</button>
+    <button class="negative" onclick="cardPressed('A')">A</button>
+
+</div>
+
+<button class="reset" onclick="resetGame()">リセット</button>
+
+<h2>残りカード枚数</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>カード</th>
+            <th>残り枚数</th>
+            <th>残り%</th>
+        </tr>
+    </thead>
+    <tbody id="cardTable"></tbody>
+</table>
 
 <script>
-let decks = 8;
 
-let counts = {
-"A":4*decks,"2":4*decks,"3":4*decks,"4":4*decks,
-"5":4*decks,"6":4*decks,"7":4*decks,"8":4*decks,
-"9":4*decks,"10":16*decks
+let runningCount = 0;
+
+const hiLoValues = {
+    '2': 1,
+    '3': 1,
+    '4': 1,
+    '5': 1,
+    '6': 1,
+    '7': 0,
+    '8': 0,
+    '9': 0,
+    '10': -1,
+    'J': -1,
+    'Q': -1,
+    'K': -1,
+    'A': -1
 };
 
-let running = 0;
+let cardCounts = {};
 
-function hilo(card){
-if(["2","3","4","5","6"].includes(card)) return 1;
-if(["10","A"].includes(card)) return -1;
-return 0;
-}
+function initializeDeck(){
 
-function update(){
-let total = Object.values(counts).reduce((a,b)=>a+b,0);
-let decksRemain = total/52;
-let trueCount = (running / decksRemain).toFixed(2);
+    const decks = parseInt(document.getElementById("deckSelect").value);
 
-document.getElementById("total").innerText = total;
-document.getElementById("trueCount").innerText = trueCount;
-
-let adv = document.getElementById("advantage");
-
-if(trueCount >= 2){
-adv.innerHTML = "有利";
-adv.className = "good";
-} else {
-adv.innerHTML = "通常";
-adv.className = "normal";
-}
-
-let html = "";
-for(let key in counts){
-html += `<button onclick="draw('${key}')">${key}</button>`;
-}
-
-document.getElementById("cards").innerHTML = html;
-}
-
-function draw(card){
-if(counts[card] > 0){
-counts[card]--;
-running += hilo(card);
-update();
-}
-}
-
-update();
-</script>
-<script>
-function playClickSound() {
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  audioCtx.resume();
-  const oscillator = audioCtx.createOscillator();
-  const gainNode = audioCtx.createGain();
-
-  oscillator.type = 'square';
-  oscillator.frequency.setValueAtTime(700, audioCtx.currentTime);
-
-  gainNode.gain.setValueAtTime(0.35, audioCtx.currentTime);
-
-  oscillator.connect(gainNode);
-  gainNode.connect(audioCtx.destination);
-
-  oscillator.start();
-  oscillator.stop(audioCtx.currentTime + 0.08);
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('button').forEach(btn => {
-    btn.onclick = () => {
-      playClickSound();
+    cardCounts = {
+        '2': 4 * decks,
+        '3': 4 * decks,
+        '4': 4 * decks,
+        '5': 4 * decks,
+        '6': 4 * decks,
+        '7': 4 * decks,
+        '8': 4 * decks,
+        '9': 4 * decks,
+        '10': 4 * decks,
+        'J': 4 * decks,
+        'Q': 4 * decks,
+        'K': 4 * decks,
+        'A': 4 * decks
     };
-  });
-});
+
+    runningCount = 0;
+
+    updateDisplay();
+}
+
+function playBeep(){
+
+    const audio = new AudioContext();
+
+    const oscillator = audio.createOscillator();
+    const gainNode = audio.createGain();
+
+    oscillator.type = 'square';
+    oscillator.frequency.setValueAtTime(700, audio.currentTime);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audio.destination);
+
+    oscillator.start();
+
+    gainNode.gain.exponentialRampToValueAtTime(
+        0.00001,
+        audio.currentTime + 0.08
+    );
+
+    oscillator.stop(audio.currentTime + 0.08);
+}
+
+function cardPressed(card){
+
+    if(cardCounts[card] <= 0){
+        return;
+    }
+
+    playBeep();
+
+    runningCount += hiLoValues[card];
+
+    cardCounts[card]--;
+
+    updateDisplay();
+}
+
+function updateDisplay(){
+
+    document.getElementById("count").textContent = runningCount;
+
+    const table = document.getElementById("cardTable");
+
+    table.innerHTML = "";
+
+    const totalRemaining =
+        Object.values(cardCounts).reduce((a,b)=>a+b,0);
+
+    for(let card in cardCounts){
+
+        const remain = cardCounts[card];
+
+        const percent =
+            ((remain / totalRemaining) * 100).toFixed(1);
+
+        table.innerHTML += `
+            <tr>
+                <td>${card}</td>
+                <td class="remain">${remain}</td>
+                <td>${percent}%</td>
+            </tr>
+        `;
+    }
+}
+
+function resetGame(){
+    initializeDeck();
+}
+
+document
+.getElementById("deckSelect")
+.addEventListener("change", initializeDeck);
+
+initializeDeck();
+
 </script>
+
 </body>
 </html>
